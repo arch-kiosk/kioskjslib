@@ -1,4 +1,4 @@
-# 💼 kioskjslib
+# 🧩 kioskjslib
 Bundled Kiosk Library for both app-style Kiosk modules and modules that use classic web architecture.
 The latter access the exported assets through kioskjslib.exports.js, which is part of the Kiosk project. 
 
