@@ -1,0 +1,42 @@
+{
+  "name": "kioskjslib",
+  "version": "0.1.0",
+  "description": "development environment for Kiosk's web 2.0 style JavaScript Library",
+  "private": true,
+  "type": "module",
+  "main": "kioskjslib.ts",
+  "exports": {
+    ".": "./kioskjslib.ts"
+  },
+  "types": "types/kioskuicomponents.d.ts",
+  "scripts": {
+    "dev": "vite --host",
+    "test": "vitest --mode development",
+    "build": "tsc && vite build"
+  },
+  "keywords": [],
+  "author": "Lutz Klein",
+  "license": "AGPL-3.0",
+  "prettier": {
+    "semi": true,
+    "trailingComma": "all",
+    "singleQuote": false,
+    "printWidth": 120,
+    "tabWidth": 4
+  },
+  "dependencies": {
+    "@types/luxon": "^3.4.2",
+    "luxon": "^3.4.4",
+    "nanoid": "^5.0.5"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "rollup-plugin-copy": "^3.5.0",
+    "sass": "^1.77.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4",
+    "vite": "^5.3.4",
+    "vite-plugin-html": "^3.2.2",
+    "vitest": "^2.0.5"
+  }
+}
