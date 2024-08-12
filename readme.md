@@ -1,8 +1,6 @@
-# 💼 The Office
- 
-## 🤸🏿👽🕵️ This repository is for people 🤸🤖🎅
-
-No matter for which field-project or which part of the software, it is here and only here in this repository where we all collaborate, report bugs and ideas, discuss ...
+# 💼 kioskjslib
+Bundled Kiosk Library for both app-style Kiosk modules and modules that use classic web architecture.
+The latter access the exported assets through kioskjslib.exports.js, which is part of the Kiosk project. 
 
 ## typical workplaces
 - 🧪 [testers work here](https://github.com/arch-kiosk/arch-kiosk-office/projects/25)
