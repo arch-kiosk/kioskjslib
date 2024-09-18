@@ -99,6 +99,12 @@ export class KioskDateTime {
         }
     }
 
+    /**
+     * Initializes a single <span class="kiosk-tz-span"> element.
+     * @param span a HTMLSpanElement
+     * @param displayTimeZone set to false if you don't want the time zone name added
+     * @param latinFormat set to False if you want the timestamp in local date and time format instead of latin
+     */
     async initKioskDateTimeSpan(span: HTMLSpanElement, displayTimeZone=true, latinFormat=true) {
         let ISOUTCDate = span.textContent?.trim()
         if (ISOUTCDate) {
