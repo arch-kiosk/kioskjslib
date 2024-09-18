@@ -1,11 +1,18 @@
 import { DateTime } from "luxon";
 import * as KioskStandardLib from "./kioskstandardlib.ts"
+import { KioskTimeZones } from "../../kiosktsapplib";
 
 export class KioskDateTimeError extends Error {
     constructor(message: string) {
     super(message); // (1)
     this.name = "KioskDateTimeError"; // (2)
   }
+}
+
+type TimeZoneInfo = {
+    id: number
+    fullName: string
+    ianaName: string
 }
 
 export class KioskDateTime {
@@ -18,6 +25,11 @@ export class KioskDateTime {
         "VII": "07", "VIII": "08", "IX": "09", "X": "10", "XI": "11", "XII": "12"}
 
     arabicMonthToLatin = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
+    private timeZones?: KioskTimeZones = undefined;
+
+    constructor(timeZones?: KioskTimeZones) {
+        this.timeZones = timeZones
+    }
 
     /**
      * Returns a formatted Latin date string based on the provided Luxon DateTime object.
@@ -33,16 +45,40 @@ export class KioskDateTime {
     }
 
     /**
+     * returns a TimeZoneInfo object with id, ianaName and fullName of the
+     * active user time zone (derived from the cookies kiosk_tz...)
+     */
+    static getActiveUserTimeZone(): TimeZoneInfo {
+        return {
+            id: parseInt(KioskStandardLib.getCookie("kiosk_tz_index")),
+            ianaName: KioskStandardLib.getCookie("kiosk_iana_time_zone"),
+            fullName: KioskStandardLib.getCookie("kiosk_tz_name")
+        }
+    }
+
+    /**
+     * returns a TimeZoneInfo object with id, ianaName and fullName of the
+     * active recording time zone.
+     * The active recording time zone is derived from the kiosk_recording_tz_... cookies.
+     */
+    static getActiveRecordingTimeZone(): TimeZoneInfo {
+        return {
+            id: parseInt(KioskStandardLib.getCookie("kiosk_recording_tz_index")),
+            ianaName: KioskStandardLib.getCookie("kiosk_recording_iana_time_zone"),
+            fullName: KioskStandardLib.getCookie("kiosk_recording_tz_name")
+        }
+    }
+    /**
      * Initializes a kiosk date-time field (a HTMLInput Element) based on the provided ID.
      * Retrieves the UTC date from the specified field, converts it to a Luxon DateTime object in UTC zone,
      * adjusts the time zone if necessary, and updates the field value with the formatted Latin date string.
      *
      * @param id The ID of the HTML input element representing the kiosk date-time field
-     * @param asRecordingTime Optional. If true this takes the IANA timezone from a hidden "-tz" Input Element.
-     *                        Otherwise the time zone is taken from the current kiosk_iana_time_zone cookie.
+     * @param asRecordingTime Optional. If true this takes the IANA timezone from a hidden "-tz" Input Element,
+     *                        otherwise the active user time zone will be used.
      */
 
-    initKioskDateTimeTzField(id: string, asRecordingTime=false) {
+    initKioskDateTimeTzField(id: string, asRecordingTime=true) {
         let field = document.getElementById(id) as HTMLInputElement
         if (field) {
             let isoUTCDate = field.dataset.utcDate
@@ -54,7 +90,7 @@ export class KioskDateTime {
                     tz = ianaTz
                 } else {
                     if (ianaTz != "-") {
-                        tz = KioskStandardLib.getCookie("kiosk_iana_time_zone")
+                        tz = KioskDateTime.getActiveUserTimeZone().ianaName
                     }
                 }
                 if (tz !== "-" && tz !== "UTC") dt = dt.setZone(tz)
@@ -63,38 +99,42 @@ export class KioskDateTime {
         }
     }
 
+    async initKioskDateTimeSpan(span: HTMLSpanElement, displayTimeZone=true, latinFormat=true) {
+        let ISOUTCDate = span.textContent?.trim()
+        if (ISOUTCDate) {
+            let dt = DateTime.fromISO(ISOUTCDate, { zone: "UTC" })
+            let tzIANA: string | undefined
+            let tzLong: string | undefined
+
+            if (span.dataset.tzIndex != undefined && this.timeZones) {
+                let tzInfo = await this.timeZones.getTimeZoneByIndex(Number(span.dataset.tzIndex))
+                if (tzInfo && tzInfo.tz_IANA) tzIANA = tzInfo.tz_IANA
+                tzLong = (tzInfo && tzInfo.tz_long)?tzInfo.tz_long:tzIANA
+            }
+            if (!tzIANA) {
+                tzIANA = span.dataset.recordingIanaTz
+            }
+
+            if (tzIANA && tzIANA !== "UTC" && tzIANA !== "-") dt = dt.setZone(tzIANA)
+            const dateStr = latinFormat?this.getLatinDate(dt):dt.toLocaleString()
+            const tzStr = tzLong?` (${tzLong})`:" (legacy)"
+            const timeStr = displayTimeZone?tzStr:""
+            span.innerText = dateStr + timeStr
+        }
+
+    }
     /**
      * Initializes <span class="kiosk-tz-span"> elements by expecting a ISO date as the span's text and
      * transforming it into a local time according to either the user's time zone or the recording time zone
      *
      * @param dialog
-     * @param asRecordingTime if True the time zone is taken from the span's data-recording-tz-index attribute.
+     * @param displayTimeZone if True (the default) the time zone name is shown
      * @param latinFormat default is true: expresses the date in Kiosk's latin date format
      */
-    initKioskDateTimeSpans(dialog: HTMLElement, asRecordingTime: Boolean=false, latinFormat = true) {
+    async initKioskDateTimeSpans(dialog: HTMLElement, displayTimeZone = true, latinFormat = true) {
         const spans = dialog.querySelectorAll("span.kiosk-tz-span")
         for (const span of spans as NodeListOf<HTMLElement>) {
-            let ISOUTCDate = (span as HTMLElement).innerText
-            if (ISOUTCDate) {
-                let dt = DateTime.fromISO(ISOUTCDate, { zone: "UTC" })
-                let tz = "-"
-                const displayRecordingTime = (asRecordingTime || (span.dataset.displayMode && span.dataset.displayMode.toLowerCase() === "recording"))
-                const ianaTz = span.dataset.recordingIanaTz
-                if (displayRecordingTime) {
-                    if (ianaTz) {
-                        tz = ianaTz
-                    }
-                } else {
-                    if (ianaTz != "-") {
-                        tz = KioskStandardLib.getCookie("kiosk_iana_time_zone")
-                    }
-                }
-                if (tz !== "-" && tz !== "UTC") dt = dt.setZone(tz)
-                const dateStr = latinFormat?this.getLatinDate(dt):dt.toLocaleString()
-                const tzStr = tz==="-"?" (legacy)":` (${tz})`
-                const timeStr = displayRecordingTime?tzStr:""
-                span.innerText = dateStr + timeStr
-            }
+            await this.initKioskDateTimeSpan(span, displayTimeZone, latinFormat)
         }
     }
 
@@ -103,9 +143,11 @@ export class KioskDateTime {
      * @param elementId The id of the element
      * @param errorClass default is "kiosk-error-border". class name that signals an error for the field
      * @param focusOnError default is true: in case of an error the element gets the focus
+     * @param useRecordingTz default is true: uses the active recording time zone. False uses the active user time zone.
      * @returns the result of guessDateTime: A ISO8601 string of the date/time in UTC time zone
      */
-    validateDateTimeField(elementId: string, errorClass: string="kiosk-error-border", focusOnError: boolean=true): string {
+    validateDateTimeField(elementId: string, errorClass: string="kiosk-error-border", focusOnError: boolean=true,
+                          useRecordingTz=true): string {
         const dtElement: HTMLInputElement = document.getElementById(elementId) as HTMLInputElement
         let result = ""
         if (dtElement) {
@@ -114,7 +156,7 @@ export class KioskDateTime {
             }
             let dt = dtElement.value
             if (dt && dt.trim()) {
-                const tz = KioskStandardLib.getCookie("kiosk_iana_time_zone")
+                const tz = useRecordingTz?KioskDateTime.getActiveRecordingTimeZone().ianaName:KioskDateTime.getActiveUserTimeZone().ianaName
                 const kdt = new KioskDateTime()
                 try {
                     result = kdt.guessDateTime(dt, false, tz)?.toISO({

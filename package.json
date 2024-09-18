@@ -25,6 +25,7 @@
     "tabWidth": 4
   },
   "dependencies": {
+    "kiosktsapplib": "file:../kiosktsapplib",
     "@types/luxon": "^3.4.2",
     "luxon": "^3.4.4",
     "nanoid": "^5.0.5"
