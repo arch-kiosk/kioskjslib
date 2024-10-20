@@ -34,6 +34,7 @@ export default defineConfig(({ command, mode }) => {
                 }
                 : {},
         build: {
+            // minify: false,
             outDir: "./dist",
             lib: {
                 entry: "./kioskjslib.ts",

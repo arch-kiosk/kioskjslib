@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "esnext",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": ["ES2022", "dom", "DOM.Iterable"],
+    "lib": ["esnext", "dom", "DOM.Iterable"],
     "skipLibCheck": true,
     "moduleResolution": "Node",
     "declaration": true,
